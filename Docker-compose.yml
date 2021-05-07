@@ -1,0 +1,184 @@
+version: '3.1'
+
+services:
+        reverse-proxy:
+                image: jwilder/nginx-proxy:alpine
+                container_name: 'Reverse-Proxy'
+                restart: always
+                ports:
+                        - '80:80'
+                        - '443:443'
+                volumes:
+                        - certs:/etc/nginx/certs:ro
+                        - vhostd:/etc/nginx/vhost.d
+                        - html:/usr/share/nginx/html
+                        - /var/run/docker.sock:/tmp/docker.sock:ro
+
+
+        nginx:
+                image: nginx
+                container_name: NGINX-Container
+                restart: always
+                #se deshabilita el puerto, para que tome los valores desde reverse-proxy
+                #ports:
+                #        - 80:80
+                volumes:
+                        #- /home/lalo/src/startbootstrap-sb-admin-2/:/usr/share/nginx/html
+                environment:
+                        - VIRTUAL_HOST=portal.midominiomtie.net
+
+                        - ~/startbootstrap-sb-admin-2/:/usr/share/nginx/html
+
+        nginx2:
+                image: nginx
+                container_name: NGINX-Container-N02
+                restart: always
+                #se deshabilita el puerto, para que tome los valores desde reverse-proxy
+                #ports:
+                #        - 80:80
+                volumes:
+                        #- /home/lalo/src/startbootstrap-sb-admin-2/:/usr/share/nginx/html
+                environment:
+                        - ~/startbootstrap-sb-admin-2/:/usr/share/nginx/html
+                        - VIRTUAL_HOST=portal.midominiomtie.net
+                         
+
+
+        nginx3:
+                image: nginx
+                container_name: NGINX-Container-N03
+                restart: always
+                #se deshabilita el puerto, para que tome los valores desde reverse-proxy
+                #ports:
+                #        - 80:80
+                volumes:
+                        #- /home/lalo/src/startbootstrap-sb-admin-2/:/usr/share/nginx/html
+                environment:
+                        - ~/startbootstrap-sb-admin-2/:/usr/share/nginx/html
+                        - VIRTUAL_HOST=portal.midominiomtie.net
+
+        nginx4:
+                image: nginx
+                container_name: NGINX-Container-N04
+                restart: always
+                #se deshabilita el puerto, para que tome los valores desde reverse-proxy
+                #ports:
+                #        - 80:80
+                volumes:
+                        #- /home/lalo/src/startbootstrap-sb-admin-2/:/usr/share/nginx/html
+                environment:
+                        - ~/startbootstrap-sb-admin-2/:/usr/share/nginx/html
+                        - VIRTUAL_HOST=portal.midominiomtie.net
+                       
+
+
+        #########################################
+        #           Servidor WordPress          #
+        #########################################
+
+        wordpress:
+                image: wordpress:php7.2-apache
+                container_name: 'WordPress'                
+                environment: 
+                        - WORDPRESS_DB_HOST= mysql
+                        - WORDPRESS_DB_USER= root
+                        - WORDPRESS_DB_PASSWORD= mysqladmin
+                        - WORDPRESS_DB_NAME= wordpress
+                        - VIRTUAL_HOST= wordpress.midominiomtie.net
+                links:
+                        - mysql:mysql
+                depends_on:
+                        - mysql
+
+
+#        angular:
+#                container_name: 'App-Angular-N01'
+#                build:
+#                  context: /home/lalo/app-angular
+#                  dockerfile: Dockerfile
+#                restart: always
+#                environment:
+#                        - VIRTUAL_HOST=angular.midominiomtie.net
+
+
+        #########################################
+        #           Servidor MySQL              #
+        #########################################
+        mysql:
+                image: mysql:8
+                command: --default-authentication-plugin=mysql_native_password
+                container_name: MySQL-Container
+                restart: always
+                ports:
+                        - 3306:3306
+                environment:
+                        MYSQL_ROOT_PASSWORD: "mysqladmin"
+                        MYSQL_DATABASE: "wordpress"
+                volumes:
+                        #- /home/lalo//volumes/mysql/data:/var/lib/mysql
+        #########################################
+                        - ~/volumes/mysql/data:/var/lib/mysql
+        #           Servidor MongoDB            #
+        #########################################
+        mongo:
+                image: mongo
+                command: mongod --auth
+                container_name: MongoDB-Container
+                restart: always
+                ports:
+                        - 27017:27017
+                environment:
+                        MONGO_INITDB_ROOT_USERNAME: dba-root
+                        MONGO_INITDB_ROOT_PASSWORD: mongoadmin
+                volumes:
+                        - ~/volumes/mongo/data/db:/data/db
+        #########################################
+        #         Servidor MSSQL Express        #
+        #########################################
+        mssql:
+                image: mcr.microsoft.com/mssql/server:2017-latest-ubuntu
+                container_name: MSSQL-Container
+                restart: always
+                ports:
+                        - 1433:1433
+                environment:
+                        SA_PASSWORD: 5q1@dw1UMTI3
+                        ACCEPT_EULA: Y
+                        MSSQL_PID: Express
+                volumes:
+                        - ~/volumes/mssql/data/db:/var/opt/mssql
+
+        netdata:
+                container_name: 'MONITOR'
+                image: netdata/netdata
+                restart: always
+                expose:
+                        - "19999"
+                #se deshabilita el puerto, para que tome los valores desde reverse-proxy
+                #ports:
+                #        - 19999:19999
+                volumes:
+                        - /etc/passwd:/host/etc/passwd:ro
+                        - /etc/group:/host/etc/group:ro
+                        - /proc:/host/proc:ro
+                        - /sys:/host/sys:ro
+                        - /var/run/docker.sock:/var/run/docker.sock:ro
+                        - netdata-etc:/etc/netdata
+                cap_add:
+                        - SYS_PTRACE
+                security_opt:
+                        - apparmor=unconfined
+                environment:
+                        - VIRTUAL_HOST=monitor.midominiomtie.net
+                        - VIRTUAL_PORT=19999
+                        - DOCKER_HOST=proxy:2375
+                        - PGID=999
+                        - VIRTUALIZATION=kvm
+               
+volumes:
+        certs:
+        html:
+        vhostd:
+        netdata-etc:
+
+ 
